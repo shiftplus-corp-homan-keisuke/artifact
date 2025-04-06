@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Artifact Loader</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f5f5f5;
+      }
+      #artifact-root {
+        width: 100%;
+        max-width: 800px;
+        min-height: 400px;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .loader {
+        text-align: center;
+        padding: 20px;
+      }
+      .error {
+        color: #721c24;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+      }
+      .mock-artifact {
+        padding: 15px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+      }
+      .mock-artifact h2 {
+        margin-top: 0;
+        color: #333;
+      }
+      .mock-artifact pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="artifact-root">
+      <div id="root"></div>
+      <!-- Reactアプリのマウントターゲット -->
+    </div>
+
+    <script>
+      (function () {
+        // 親オリジンの設定 - 本番では正確に設定する必要あり
+        const ALLOWED_PARENT_ORIGIN = "*"; // モックアップ用に全て許可
+        let currentCleanup = null;
+
+        function handleMessage(event) {
+          console.log("メッセージを受信しました:", event.data);
+          // オリジンチェック - モックでは緩めに設定
+          // if (event.origin !== ALLOWED_PARENT_ORIGIN) return;
+
+          const { data } = event;
+
+          if (data.type === "loadArtifact") {
+            console.log("[Loader] loadArtifact メッセージ受信:", data.artifact);
+            loadArtifact(data.artifact);
+          }
+        }
+
+        function loadArtifact(artifact) {
+          console.log("アーティファクトを読み込みます:", artifact);
+          cleanupPreviousArtifact();
+
+          if (!artifact || !artifact.type) {
+            displayError("無効なアーティファクトデータ");
+            return;
+          }
+
+          try {
+            if (artifact.type === "jsBundle") {
+              const scriptElement = document.createElement("script");
+              scriptElement.textContent = artifact.content;
+              console.log(
+                "[Loader] スクリプト追加前の #root:",
+                document.getElementById("root")
+              );
+              // document.head.appendChild(scriptElement); // head ではなく body の末尾に追加する
+              document.body.appendChild(scriptElement);
+              console.log("[Loader] スクリプトを body に追加しました");
+              console.log(
+                "[Loader] スクリプト追加後の #root:",
+                document.getElementById("root")
+              );
+
+              currentCleanup = () => {
+                // body から script を削除するように変更
+                if (scriptElement.parentNode === document.body) {
+                  document.body.removeChild(scriptElement);
+                }
+              };
+            } else {
+              displayError(
+                `未サポートのアーティファクト種別: ${artifact.type}`
+              );
+            }
+          } catch (error) {
+            displayError(
+              `アーティファクトの実行中にエラーが発生しました: ${error.message}`
+            );
+          }
+        }
+
+        function cleanupPreviousArtifact() {
+          const artifactRoot = document.getElementById("artifact-root");
+
+          // 前回のクリーンアップ関数を実行
+          if (typeof currentCleanup === "function") {
+            try {
+              currentCleanup();
+            } catch (err) {
+              console.error("クリーンアップ中にエラーが発生しました", err);
+            }
+            console.log(
+              "[Loader] cleanupPreviousArtifact 後の #root:",
+              document.getElementById("root")
+            );
+            currentCleanup = null;
+          }
+
+          // artifact-rootをクリア (ただし、中の #root は残す必要があるためコメントアウト)
+          // artifactRoot.innerHTML = '';
+        }
+
+        function displayError(message) {
+          const artifactRoot = document.getElementById("artifact-root");
+          const errorElement = document.createElement("div");
+          errorElement.className = "error";
+          errorElement.textContent = message;
+          artifactRoot.appendChild(errorElement);
+        }
+
+        // メッセージリスナーの登録
+        window.addEventListener("message", handleMessage);
+
+        // 初期化完了を親ウィンドウに通知
+        function notifyParent() {
+          console.log("親ウィンドウに準備完了を通知します");
+          window.parent.postMessage({ type: "loaderReady" }, "*");
+        }
+
+        // artifact-root の内容をクリアしないように変更 (内部に #root があるため)
+        // document.getElementById('artifact-root').innerHTML = '<div class="loader">アーティファクト待機中...</div>';
+
+        // 少し遅延させて親ウィンドウに通知（タイミング問題を回避）
+        setTimeout(notifyParent, 500);
+      })();
+    </script>
+  </body>
+</html>

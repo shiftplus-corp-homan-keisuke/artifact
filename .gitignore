@@ -1,0 +1,32 @@
+# 依存関係 (Dependencies)
+node_modules/
+*/node_modules/
+
+# ビルド成果物 (Build artifacts)
+dist/
+*/dist/
+build/
+*/build/
+
+# 環境変数ファイル (Environment variables)
+.env
+*.env.*
+!.env.example
+
+# ログファイル (Log files)
+*.log
+logs/
+*.log.*
+
+# OS生成ファイル (OS generated files)
+.DS_Store
+Thumbs.db
+
+# 一時ファイル (Temporary files)
+tmp/
+
+# エディタ設定ディレクトリ/ファイル (Editor directories and files)
+.vscode/
+.idea/
+*.swp
+*~
