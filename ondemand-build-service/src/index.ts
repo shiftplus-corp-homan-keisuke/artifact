@@ -11,7 +11,7 @@ import { containerService } from "./container/containerService";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3700;
 
 // ミドルウェアの設定
 app.use(cors());
@@ -42,9 +42,34 @@ async function initializeContainer() {
 initializeContainer()
   .then(() => {
     // サーバーの起動
-    app.listen(PORT, () => {
-      logger.info(`サーバーが起動しました: http://localhost:${PORT}`);
+    const server = app.listen(PORT, () => {
+      // server 変数に格納
+      logger.info(`サーバーリスニング開始: http://localhost:${PORT}`); // ログ変更
       logger.info("Docker環境を使用してViteビルドを実行します");
+    });
+
+    // listen イベントの確認
+    server.on("listening", () => {
+      logger.info("サーバーが listening イベントを発火しました。");
+    });
+
+    // エラーハンドリングを追加
+    server.on("error", (error) => {
+      logger.error("サーバーリスニング中にエラーが発生しました:", error);
+      process.exit(1);
+    });
+
+    // プロセス終了時のログ
+    process.on("exit", (code) => {
+      logger.info(`プロセスがコード ${code} で終了します。`);
+    });
+    // SIGINT シグナルハンドリングを追加
+    process.on("SIGINT", () => {
+      logger.info("SIGINT を受信しました。サーバーをシャットダウンします...");
+      server.close(() => {
+        logger.info("サーバーが正常にクローズされました。");
+        process.exit(0);
+      });
     });
   })
   .catch((err) => {

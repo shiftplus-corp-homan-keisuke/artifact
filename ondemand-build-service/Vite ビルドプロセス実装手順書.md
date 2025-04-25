@@ -581,7 +581,7 @@ npm run dev
 以下のようなリクエストを送信して、ビルドプロセスをテストします：
 
 ```bash
-curl -X POST http://localhost:3000/api/build-artifact \
+curl -X POST http://localhost:3700/api/build-artifact \
   -H "Content-Type: application/json" \
   -d '{"sourceCode": "import React from \"react\"; export default function App() { return <div>Hello World</div>; }"}'
 ```
@@ -630,8 +630,21 @@ The command 'docker' could not be found
     - **修正**: `docker/builder/build.sh` 内で `cd /build` した後に `npm install --legacy-peer-deps` を実行し、ビルドに必要な依存関係をローカルにインストールするように変更。また、`vite build` を `npx vite build` に変更。
 
 4.  **ビルド成果物のファイル未発見エラー (`ENOENT: no such file or directory ... artifact.js`)**:
+
     - **原因**: Vite の `iife` フォーマットビルドではファイル名に `.iife.js` が付与される (`artifact.iife.js`) が、`readArtifact` メソッドが `artifact.js` を読み込もうとしていた。
     - **修正**: `readArtifact` メソッドで読み込むファイル名を `artifact.iife.js` に修正。
+
+5.  **ブラウザでの `Uncaught ReferenceError: process is not defined` エラー**:
+    - **原因**: Vite でビルドされた JavaScript バンドルが Node.js の `process` オブジェクトを参照しているが、ブラウザ環境では `process` オブジェクトが定義されていない。
+    - **修正**: `vite.config.js` に `define` オプションを追加して、ブラウザ環境でも `process.env` を使用できるようにした。
+    ```javascript
+    define: {
+      // ブラウザ環境で process.env を使用できるようにする
+      'process.env': JSON.stringify({
+        NODE_ENV: 'production',
+      })
+    }
+    ```
 
 ## 5. 注意点
 
