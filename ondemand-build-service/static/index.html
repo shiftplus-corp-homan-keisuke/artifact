@@ -99,7 +99,7 @@
         <textarea id="source-code" spellcheck="false">
 // React サンプルコンポーネント
 import React, { useState } from 'react';
-import { createRoot } from 'react-dom/client'; // 'react-dom' から 'react-dom/client' に変更
+import { createRoot } from 'react-dom/client';
 
 function App() {
   const [count, setCount] = useState(0);
@@ -118,11 +118,10 @@ function App() {
   );
 }
 
-// ReactDOM.render(<App />, document.getElementById('root')); // 古いAPI呼び出しをコメントアウト
 const container = document.getElementById('root');
 const root = createRoot(container); // createRoot API を使用
-root.render(<App />);</textarea
-        >
+root.render(<App />);
+        </textarea>
 
         <div class="buttons">
           <button id="build-button">ビルド実行</button>
